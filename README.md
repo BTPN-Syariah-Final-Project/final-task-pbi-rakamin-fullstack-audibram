@@ -17,7 +17,7 @@ This file provides comprehensive instructions on setting up, running, and using 
 To run the M-Banking application locally, follow these steps:
 1. __Clone the Repository:__
 ```
-git clone <repository_url>
+git clone https://github.com/BTPN-Syariah-Final-Project/final-task-pbi-rakamin-fullstack-audibram.git
 ``` 
 2. __Navigate to the Project Directory:__
 ```
