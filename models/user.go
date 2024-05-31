@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"btpn-final/helpers"
+	"gorm.io/gorm"
+	"time"
+)
 
 type User struct {
 	ID        uint    `gorm:"primaryKey"`
@@ -10,4 +14,9 @@ type User struct {
 	Photos    []Photo `gorm:"constraint:OnDelete:CASCADE;"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+func (u *User) BeforeSave(tx *gorm.DB) (err error) {
+	u.Password = helpers.HashPassword(u.Password)
+	return
 }
