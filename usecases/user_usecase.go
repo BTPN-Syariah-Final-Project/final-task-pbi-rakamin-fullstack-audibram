@@ -12,6 +12,7 @@ type UserUsecase interface {
 	LoginUser(email, password string) (*models.User, string, error)
 	UpdateUser(user *models.User) error
 	DeleteUser(userID uint) error
+	GetUserByID(userID uint) (*models.User, error)
 }
 
 type userUsecase struct {
@@ -50,4 +51,8 @@ func (u *userUsecase) UpdateUser(user *models.User) error {
 
 func (u *userUsecase) DeleteUser(userID uint) error {
 	return u.userRepository.DeleteUser(userID)
+}
+
+func (u *userUsecase) GetUserByID(userID uint) (*models.User, error) {
+	return u.userRepository.GetUserByID(userID)
 }

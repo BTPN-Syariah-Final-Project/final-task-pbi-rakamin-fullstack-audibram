@@ -8,7 +8,7 @@ import (
 type UserRepository interface {
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
-	GetUserById(userId uint) (*models.User, error)
+	GetUserByID(userID uint) (*models.User, error)
 	UpdateUser(user *models.User) error
 	DeleteUser(userId uint) error
 }
@@ -33,9 +33,9 @@ func (u *userRepository) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (u *userRepository) GetUserById(userId uint) (*models.User, error) {
+func (ur *userRepository) GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
-	if err := u.db.First(&user, userId).Error; err != nil {
+	if err := ur.db.First(&user, userID).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

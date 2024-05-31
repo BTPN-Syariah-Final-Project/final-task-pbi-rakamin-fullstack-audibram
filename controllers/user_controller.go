@@ -80,3 +80,17 @@ func (uc *UserController) Delete(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "user deleted successfully"})
 }
+
+func (uc *UserController) GetLoginInfo(c *gin.Context) {
+	userID, _ := c.Get("userID")
+
+	user, err := uc.userUsecase.GetUserByID(userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	user.Password = "abcde"
+
+	c.JSON(http.StatusOK, user)
+}
