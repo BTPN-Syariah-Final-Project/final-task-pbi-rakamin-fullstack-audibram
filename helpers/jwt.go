@@ -1,12 +1,18 @@
 package helpers
 
 import (
+	"errors"
 	"github.com/dgrijalva/jwt-go/v4"
 	"os"
 	"time"
 )
 
 var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
+
+type Claims struct {
+	UserID uint `json:"user_id"`
+	jwt.StandardClaims
+}
 
 func GenerateJWT(userID uint) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -22,17 +28,22 @@ func GenerateJWT(userID uint) (string, error) {
 	return tokenString, nil
 }
 
-func ValidateJWT(tokenString string) (uint, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+func ParseJWT(tokenString string) (uint, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
 		return jwtSecret, nil
 	})
+
 	if err != nil {
 		return 0, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return uint(claims["userID"].(float64)), nil
+	if !token.Valid {
+		return 0, errors.New("invalid token")
 	}
 
-	return 0, err
+	return claims.UserID, nil
 }

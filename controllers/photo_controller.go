@@ -1,62 +1,73 @@
 package controllers
 
 import (
-	"btpn-final/models"
+	"btpn-final/dto"
 	"btpn-final/usecases"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"strconv"
 )
 
 type PhotoController struct {
 	photoUsecase usecases.PhotoUsecase
 }
 
-func NewPhotoController(photoUsecase usecases.PhotoUsecase) *PhotoController {
-	return &PhotoController{photoUsecase: photoUsecase}
+func NewPhotoController(pu usecases.PhotoUsecase) *PhotoController {
+	return &PhotoController{pu}
 }
 
 func (pc *PhotoController) AddPhoto(c *gin.Context) {
-	var photo models.Photo
-	if err := c.ShouldBindJSON(&photo); err != nil {
+	var req dto.PhotoUploadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := pc.photoUsecase.AddPhoto(&photo); err != nil {
+	userID, _ := c.Get("userID")
+	photo, err := pc.photoUsecase.AddPhoto(req, userID.(uint))
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "photo added successfully"})
+	c.JSON(http.StatusCreated, dto.PhotoResponse{
+		ID:        photo.ID,
+		Title:     photo.Title,
+		Caption:   photo.Caption,
+		PhotoURL:  photo.PhotoURL,
+		UserID:    photo.UserID,
+		CreatedAt: photo.CreatedAt,
+		UpdatedAt: photo.UpdatedAt,
+	})
+}
+
+func (pc *PhotoController) GetPhoto(c *gin.Context) {
+	photoID := c.Param("photoID")
+
+	photo, err := pc.photoUsecase.GetPhotoByID(photoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.PhotoResponse{
+		ID:        photo.ID,
+		Title:     photo.Title,
+		Caption:   photo.Caption,
+		PhotoURL:  photo.PhotoURL,
+		UserID:    photo.UserID,
+		CreatedAt: photo.CreatedAt,
+		UpdatedAt: photo.UpdatedAt,
+	})
 }
 
 func (pc *PhotoController) DeletePhoto(c *gin.Context) {
-	userID, _ := c.Get("userID")
-	photoIDStr := c.Param("photoID")
-
-	photoID, err := strconv.ParseUint(photoIDStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid photoID"})
-		return
-	}
-
-	if err := pc.photoUsecase.DeletePhoto(uint(photoID), userID.(uint)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "photo deleted successfully"})
-}
-
-func (p *PhotoController) GetPhoto(c *gin.Context) {
 	photoID := c.Param("photoID")
 
-	photo, err := p.photoUsecase.GetPhotoByID(photoID)
+	err := pc.photoUsecase.DeletePhoto(photoID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, photo)
+	c.JSON(http.StatusOK, gin.H{"message": "Photo deleted successfully"})
 }

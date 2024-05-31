@@ -1,44 +1,44 @@
 package usecases
 
 import (
+	"btpn-final/dto"
 	"btpn-final/models"
 	"btpn-final/repositories"
-	"errors"
-	"strconv"
 )
 
 type PhotoUsecase interface {
-	AddPhoto(photo *models.Photo) error
-	DeletePhoto(photoID, userID uint) error
+	AddPhoto(req dto.PhotoUploadRequest, userID uint) (*models.Photo, error)
 	GetPhotoByID(photoID string) (*models.Photo, error)
+	DeletePhoto(photoID string) error
 }
 
 type photoUsecase struct {
 	photoRepository repositories.PhotoRepository
-	userRepository  repositories.UserRepository
 }
 
-func NewPhotoUsecase(pr repositories.PhotoRepository, ur repositories.UserRepository) PhotoUsecase {
-	return &photoUsecase{pr, ur}
+func NewPhotoUsecase(pr repositories.PhotoRepository) PhotoUsecase {
+	return &photoUsecase{pr}
 }
 
-func (p *photoUsecase) AddPhoto(photo *models.Photo) error {
-	return p.photoRepository.CreatePhoto(photo)
-}
-
-func (p *photoUsecase) DeletePhoto(photoID, userID uint) error {
-	photo, err := p.photoRepository.GetPhotoByID(strconv.Itoa(int(photoID)))
-	if err != nil {
-		return err
+func (pu *photoUsecase) AddPhoto(req dto.PhotoUploadRequest, userID uint) (*models.Photo, error) {
+	photo := models.Photo{
+		Title:    req.Title,
+		Caption:  req.Caption,
+		PhotoURL: req.PhotoURL,
+		UserID:   userID,
 	}
 
-	if photo.UserID != userID {
-		return errors.New("wrong user")
+	if err := pu.photoRepository.CreatePhoto(&photo); err != nil {
+		return nil, err
 	}
 
-	return p.photoRepository.DeletePhoto(photoID)
+	return &photo, nil
 }
 
-func (p *photoUsecase) GetPhotoByID(photoID string) (*models.Photo, error) {
-	return p.photoRepository.GetPhotoByID(photoID)
+func (pu *photoUsecase) GetPhotoByID(photoID string) (*models.Photo, error) {
+	return pu.photoRepository.GetPhotoByID(photoID)
+}
+
+func (pu *photoUsecase) DeletePhoto(photoID string) error {
+	return pu.photoRepository.DeletePhoto(photoID)
 }

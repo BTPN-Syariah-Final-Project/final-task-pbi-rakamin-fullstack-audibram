@@ -1,96 +1,119 @@
 package controllers
 
 import (
-	"btpn-final/models"
+	"btpn-final/dto"
+	_ "btpn-final/models"
 	"btpn-final/usecases"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 type UserController struct {
 	userUsecase usecases.UserUsecase
 }
 
-func NewUserController(u usecases.UserUsecase) *UserController {
-	return &UserController{u}
+func NewUserController(uu usecases.UserUsecase) *UserController {
+	return &UserController{uu}
 }
 
 func (uc *UserController) Register(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var req dto.UserRegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := uc.userUsecase.RegisterUser(&user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "user register successfully"})
-}
-
-func (uc *UserController) Login(c *gin.Context) {
-	var loginData struct {
-		Email    string `json:"email" binding:"required,email"`
-		Password string `json:"password" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&loginData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	user, token, err := uc.userUsecase.LoginUser(loginData.Email, loginData.Password)
+	user, err := uc.userUsecase.RegisterUser(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"user":  user,
-		"token": token,
+	c.JSON(http.StatusCreated, dto.UserResponse{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	})
+}
+
+func (uc *UserController) Login(c *gin.Context) {
+	var req dto.UserLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, err := uc.userUsecase.LoginUser(req)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.AuthResponse{Token: token})
+}
+
+func (uc *UserController) GetLoginInfo(c *gin.Context) {
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, ok := userIDValue.(uint)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+
+	user, err := uc.userUsecase.GetUserByID(strconv.Itoa(int(userID)))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.UserResponse{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	})
 }
 
 func (uc *UserController) Update(c *gin.Context) {
-	userID, _ := c.Get("userID")
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	userID := c.Param("userID")
+	var req dto.UserUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user.ID = userID.(uint)
-
-	if err := uc.userUsecase.UpdateUser(&user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "user updated successfully"})
-}
-
-func (uc *UserController) Delete(c *gin.Context) {
-	userID, _ := c.Get("userID")
-	if err := uc.userUsecase.DeleteUser(userID.(uint)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "user deleted successfully"})
-}
-
-func (uc *UserController) GetLoginInfo(c *gin.Context) {
-	userID, _ := c.Get("userID")
-
-	user, err := uc.userUsecase.GetUserByID(userID.(uint))
+	updatedUser, err := uc.userUsecase.UpdateUser(userID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	user.Password = "abcde"
+	c.JSON(http.StatusOK, dto.UserResponse{
+		ID:        updatedUser.ID,
+		Username:  updatedUser.Username,
+		Email:     updatedUser.Email,
+		CreatedAt: updatedUser.CreatedAt,
+		UpdatedAt: updatedUser.UpdatedAt,
+	})
+}
 
-	c.JSON(http.StatusOK, user)
+func (uc *UserController) Delete(c *gin.Context) {
+	userID := c.Param("userID")
+
+	err := uc.userUsecase.DeleteUser(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }

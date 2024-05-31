@@ -17,6 +17,6 @@ type User struct {
 }
 
 func (u *User) BeforeSave(tx *gorm.DB) (err error) {
-	u.Password = helpers.HashPassword(u.Password)
+	u.Password, _ = helpers.HashPassword(u.Password)
 	return
 }

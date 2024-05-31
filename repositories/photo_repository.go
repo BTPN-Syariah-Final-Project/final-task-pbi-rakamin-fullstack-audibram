@@ -8,7 +8,7 @@ import (
 type PhotoRepository interface {
 	CreatePhoto(photo *models.Photo) error
 	GetPhotoByID(photoID string) (*models.Photo, error)
-	DeletePhoto(photoID uint) error
+	DeletePhoto(photoID string) error
 }
 
 type photoRepository struct {
@@ -19,18 +19,18 @@ func NewPhotoRepository(db *gorm.DB) PhotoRepository {
 	return &photoRepository{db}
 }
 
-func (p *photoRepository) CreatePhoto(photo *models.Photo) error {
-	return p.db.Create(photo).Error
+func (pr *photoRepository) CreatePhoto(photo *models.Photo) error {
+	return pr.db.Create(photo).Error
 }
 
-func (p *photoRepository) GetPhotoByID(photoID string) (*models.Photo, error) {
+func (pr *photoRepository) GetPhotoByID(photoID string) (*models.Photo, error) {
 	var photo models.Photo
-	if err := p.db.First(&photo, photoID).Error; err != nil {
+	if err := pr.db.First(&photo, photoID).Error; err != nil {
 		return nil, err
 	}
 	return &photo, nil
 }
 
-func (p *photoRepository) DeletePhoto(photoID uint) error {
-	return p.db.Delete(&models.Photo{}, photoID).Error
+func (pr *photoRepository) DeletePhoto(photoID string) error {
+	return pr.db.Delete(&models.Photo{}, photoID).Error
 }

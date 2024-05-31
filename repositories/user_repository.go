@@ -8,9 +8,9 @@ import (
 type UserRepository interface {
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
-	GetUserByID(userID uint) (*models.User, error)
+	GetUserByID(userID string) (*models.User, error)
 	UpdateUser(user *models.User) error
-	DeleteUser(userId uint) error
+	DeleteUser(userID string) error
 }
 
 type userRepository struct {
@@ -21,19 +21,19 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db}
 }
 
-func (u *userRepository) CreateUser(user *models.User) error {
-	return u.db.Create(user).Error
+func (ur *userRepository) CreateUser(user *models.User) error {
+	return ur.db.Create(user).Error
 }
 
-func (u *userRepository) GetUserByEmail(email string) (*models.User, error) {
+func (ur *userRepository) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
-	if err := u.db.Where("email = ?", email).First(&user).Error; err != nil {
+	if err := ur.db.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func (ur *userRepository) GetUserByID(userID uint) (*models.User, error) {
+func (ur *userRepository) GetUserByID(userID string) (*models.User, error) {
 	var user models.User
 	if err := ur.db.First(&user, userID).Error; err != nil {
 		return nil, err
@@ -41,10 +41,10 @@ func (ur *userRepository) GetUserByID(userID uint) (*models.User, error) {
 	return &user, nil
 }
 
-func (u *userRepository) UpdateUser(user *models.User) error {
-	return u.db.Save(user).Error
+func (ur *userRepository) UpdateUser(user *models.User) error {
+	return ur.db.Save(user).Error
 }
 
-func (u *userRepository) DeleteUser(userId uint) error {
-	return u.db.Delete(&models.User{}, userId).Error
+func (ur *userRepository) DeleteUser(userID string) error {
+	return ur.db.Delete(&models.User{}, userID).Error
 }

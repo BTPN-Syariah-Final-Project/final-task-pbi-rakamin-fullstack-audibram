@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"btpn-final/dto"
 	"btpn-final/helpers"
 	"btpn-final/models"
 	"btpn-final/repositories"
@@ -8,11 +9,11 @@ import (
 )
 
 type UserUsecase interface {
-	RegisterUser(user *models.User) error
-	LoginUser(email, password string) (*models.User, string, error)
-	UpdateUser(user *models.User) error
-	DeleteUser(userID uint) error
-	GetUserByID(userID uint) (*models.User, error)
+	RegisterUser(req dto.UserRegisterRequest) (*models.User, error)
+	LoginUser(req dto.UserLoginRequest) (string, error)
+	GetUserByID(userID string) (*models.User, error)
+	UpdateUser(userID string, req dto.UserUpdateRequest) (*models.User, error)
+	DeleteUser(userID string) error
 }
 
 type userUsecase struct {
@@ -23,36 +24,69 @@ func NewUserUsecase(ur repositories.UserRepository) UserUsecase {
 	return &userUsecase{ur}
 }
 
-func (u *userUsecase) RegisterUser(user *models.User) error {
-	return u.userRepository.CreateUser(user)
-}
+func (uu *userUsecase) RegisterUser(req dto.UserRegisterRequest) (*models.User, error) {
+	hashedPassword, _ := helpers.HashPassword(req.Password)
 
-func (u *userUsecase) LoginUser(email, password string) (*models.User, string, error) {
-	user, err := u.userRepository.GetUserByEmail(email)
-	if err != nil {
-		return nil, "", err
+	user := models.User{
+		Username: req.Username,
+		Email:    req.Email,
+		Password: hashedPassword,
 	}
 
-	if !helpers.CheckPasswordHash(password, user.Password) {
-		return nil, "", errors.New("invalid password")
+	if err := uu.userRepository.CreateUser(&user); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (uu *userUsecase) LoginUser(req dto.UserLoginRequest) (string, error) {
+	user, err := uu.userRepository.GetUserByEmail(req.Email)
+	if err != nil {
+		return "", err
+	}
+
+	if !helpers.CheckPasswordHash(req.Password, user.Password) {
+		return "", errors.New("invalid credentials")
 	}
 
 	token, err := helpers.GenerateJWT(user.ID)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 
-	return user, token, nil
+	return token, nil
 }
 
-func (u *userUsecase) UpdateUser(user *models.User) error {
-	return u.userRepository.UpdateUser(user)
+func (uu *userUsecase) GetUserByID(userID string) (*models.User, error) {
+	return uu.userRepository.GetUserByID(userID)
 }
 
-func (u *userUsecase) DeleteUser(userID uint) error {
-	return u.userRepository.DeleteUser(userID)
+func (uu *userUsecase) UpdateUser(userID string, req dto.UserUpdateRequest) (*models.User, error) {
+	user, err := uu.userRepository.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Username != "" {
+		user.Username = req.Username
+	}
+	if req.Email != "" {
+		user.Email = req.Email
+	}
+	if req.Password != "" {
+		hashedPassword, _ := helpers.HashPassword(req.Password)
+
+		user.Password = hashedPassword
+	}
+
+	if err := uu.userRepository.UpdateUser(user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
-func (u *userUsecase) GetUserByID(userID uint) (*models.User, error) {
-	return u.userRepository.GetUserByID(userID)
+func (uu *userUsecase) DeleteUser(userID string) error {
+	return uu.userRepository.DeleteUser(userID)
 }

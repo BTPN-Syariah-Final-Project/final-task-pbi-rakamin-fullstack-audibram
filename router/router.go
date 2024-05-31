@@ -16,7 +16,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	photoRepository := repositories.NewPhotoRepository(db)
 
 	userUsecase := usecases.NewUserUsecase(userRepository)
-	photoUsecase := usecases.NewPhotoUsecase(photoRepository, userRepository)
+	photoUsecase := usecases.NewPhotoUsecase(photoRepository)
 
 	userController := controllers.NewUserController(userUsecase)
 	photoController := controllers.NewPhotoController(photoUsecase)
