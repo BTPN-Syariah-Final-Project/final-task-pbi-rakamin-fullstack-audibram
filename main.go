@@ -15,7 +15,7 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.User{}, &models.Photo{})
 
 	r := router.SetupRouter(db)
 	r.Run()
