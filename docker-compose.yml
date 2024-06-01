@@ -10,8 +10,8 @@ services:
     environment:
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USER=audi
-      - DB_PASSWORD=audi
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
       - DB_NAME=m_banking
       - JWT_SECRET=a_very_secret_key_which_is_random_and_long_enough
 
